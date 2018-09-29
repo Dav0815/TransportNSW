@@ -1,16 +1,16 @@
 # TransportNSW
-Python lib to access Transport NSW information
+Python lib to access Transport NSW information.
 
-# How to Use
+## How to Use
 
-## Get your API Key
+### Get your API Key
 An OpenData account and API key is required to request the data. More information on how to create the free account can be found here.
 https://opendata.transport.nsw.gov.au/user-guide
 
-## Get your stop and line
+### Get your stop and line
 The libary will expect at least stop id to request the next leave events. The easieste way to get the ID is using Google Maps and clicking on one of the bus, train or ferry stops. The information pane one the left will show the relevant stop ID.
 
-## Sample Code
+### Sample Code
 The following example will request the next leave event for the bus line *199* from stop ID *209516*.
 
 **Code:**
