@@ -3,16 +3,14 @@ Python lib to access Transport NSW information
 
 # How to Use
 
-## 1 Get your API Key
-In order to access the Transport NSW information, you have to register and generate an API key.
-[https://opendata.transport.nsw.gov.au/user-guide] (https://opendata.transport.nsw.gov.au/user-guide)
+## Get your API Key
+An OpenData account and API key is required to request the data. More information on how to create the free account can be found here.
+https://opendata.transport.nsw.gov.au/user-guide
 
-## 2 Get your stop and line
-The libary will expect at least stop id to request the next leave events. The easieste way to get the ID is using Google Maps and clicking on one of the bus, train or ferry stops. The information pane one the left will show you the relevant stop ID.
+## Get your stop and line
+The libary will expect at least stop id to request the next leave events. The easieste way to get the ID is using Google Maps and clicking on one of the bus, train or ferry stops. The information pane one the left will show the relevant stop ID.
 
-## 3 test.py
-With the API you can now setup your first test code. 
-
+## Sample Code
 The following example will request the next leave event for the bus line *199* from stop ID *209516*.
 
 **Code:**
@@ -24,17 +22,11 @@ print(journey)
 ```
 **Result:**
 ```
-No language indicated, so no syntax highlighting. 
-But let's throw in a <b>tag</b>.
+[{'delay': 0.0, 'route': u'199', 'due': 11.0, 'realtime': 'y'}]
 ```
-You can request any bus/train/ferry leaving from a given stop by leaving the line empty
+Leaving the line field empty will return any bus/train/ferry leaving next from a given stop.
 **Code:**
 
 ```python
 journey = p1.get_departures('209516','','YOUR_API_KEY')
-```
-**Result:**
-```
-No language indicated, so no syntax highlighting. 
-But let's throw in a <b>tag</b>.
 ```
