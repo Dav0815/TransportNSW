@@ -24,9 +24,21 @@ print(journey)
 ```
 [{'delay': 0.0, 'route': u'199', 'due': 11.0, 'realtime': 'y'}]
 ```
+route: bus, train, ferry number
+due: minutes till next leave
+realtime: flag if the leave event has realtime information
+delay: delay in minutes from the scheduled leave time
+
 Leaving the line field empty will return any bus/train/ferry leaving next from a given stop.
 **Code:**
 
 ```python
 journey = p1.get_departures('209516','','YOUR_API_KEY')
+```
+
+### Errors
+
+No leave event for a given line with wrong stop ID or not matching route.
+```
+[{'delay': 'n/a', 'route': '1999', 'due': 'n/a', 'realtime': 'n/a'}]
 ```
