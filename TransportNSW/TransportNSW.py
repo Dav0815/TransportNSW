@@ -57,8 +57,10 @@ class TransportNSW(object):
         #print(result)
 
         # If there is no stop events for the query, set to default response
-        if not result['stopEvents']:
-            print("No stop events for this query")
+        try:
+            result['stopEvents']
+        except KeyError:
+            #print("No stop events for this query")
             self.info = [{
                 ATTR_ROUTE: self.route,
                 ATTR_DUE_IN: 'n/a',
