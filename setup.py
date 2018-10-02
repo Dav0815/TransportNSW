@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="TransportNSW",
-    version="0.0.2",
+    version="0.0.1",
     author="Dav0815",
     description="Get transport information from TransportNSW",
     long_description=long_description,
