@@ -18,6 +18,7 @@ class TransportNSW(object):
         self.route = None
         self.apikey = None
         self.info = [{
+            ATTR_STOP_ID: None,
             ATTR_ROUTE: None,
             ATTR_DUE_IN: 'n/a',
             ATTR_DELAY: 'n/a',
@@ -30,7 +31,7 @@ class TransportNSW(object):
         self.route = route
         self.apikey = apikey
 
-        #Build the URL including the STOPID and the API key
+        # Build the URL including the STOPID and the API key
         url = \
             'https://api.transport.nsw.gov.au/v1/tp/departure_mon?' \
             'outputFormat=rapidJSON&coordOutputFormat=EPSG%3A4326&' \
@@ -44,9 +45,10 @@ class TransportNSW(object):
 
         # If there is no valid request, set to default response
         if response.status_code != 200:
-            print("Error with the request sent")
-            #print response.status_code
+            # print("Error with the request sent")
+            # print response.status_code
             self.info = [{
+                ATTR_STOP_ID: self.stopid,
                 ATTR_ROUTE: self.route,
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
@@ -56,14 +58,15 @@ class TransportNSW(object):
 
         # Parse the result as a JSON object
         result = response.json()
-        #print(result)
+        # print(result)
 
         # If there is no stop events for the query, set to default response
         try:
             result['stopEvents']
         except KeyError:
-            #print("No stop events for this query")
+            # print("No stop events for this query")
             self.info = [{
+                ATTR_STOP_ID: self.stopid,
                 ATTR_ROUTE: self.route,
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
@@ -79,72 +82,20 @@ class TransportNSW(object):
         if self.route != '':
             # Find the next stop events for a specific route
             for i in range(len(result['stopEvents'])):
-                number = ''
-                planned = ''
-                estimated = ''
-                due = 0
-                delay = 0
-                realtime = 'n'
-
                 number = result['stopEvents'][i]['transportation']['number']
                 if number == self.route:
-                    planned = datetime.strptime(result['stopEvents'][i]
-                                                ['departureTimePlanned'], fmt)
-                    estimated = planned
-                    if 'isRealtimeControlled' in result['stopEvents'][i]:
-                        realtime = 'y'
-                        estimated = datetime.strptime(result['stopEvents'][i]
-                                                      ['departureTimeEstimated'], fmt)
-                    if estimated > datetime.utcnow():
-                        due = self.get_due(estimated)
-                        delay = self.get_delay(planned, estimated)
-                        monitor.append([
-                            number,
-                            due,
-                            delay,
-                            planned,
-                            estimated,
-                            realtime,
-                            ])
-
+                    monitor.append(processEvent(result, i))
                     if len(monitor) >= maxresults:
                         # We found enough results, lets stop
                         break
         else:
             # No route defined, find any route leaving next
             for i in range(0, maxresults):
-                number = ''
-                planned = ''
-                estimated = ''
-                due = 0
-                delay = 0
-                realtime = 'n'
-
-                number = result['stopEvents'][i]['transportation']['number']
-                planned = datetime.strptime(result['stopEvents'][i]
-                                            ['departureTimePlanned'], fmt)
-                estimated = planned
-                if 'isRealtimeControlled' in result['stopEvents'][i]:
-                    realtime = 'y'
-                    estimated = datetime.strptime(result['stopEvents'][i]
-                                                  ['departureTimeEstimated'], fmt)
-
-                # Only deal with future leave times
-                if estimated > datetime.utcnow():
-                    due = self.get_due(estimated)
-                    delay = self.get_delay(planned, estimated)
-
-                    monitor.append([
-                        number,
-                        due,
-                        delay,
-                        planned,
-                        estimated,
-                        realtime,
-                        ])
+                monitor.append(processEvent(result, i))
 
         if monitor:
             self.info = [{
+                ATTR_STOP_ID: self.stopid,
                 ATTR_ROUTE: monitor[0][0],
                 ATTR_DUE_IN: monitor[0][1],
                 ATTR_DELAY: monitor[0][2],
@@ -154,12 +105,43 @@ class TransportNSW(object):
         else:
             # No stop events for this route
             self.info = [{
+                ATTR_STOP_ID: self.stopid,
                 ATTR_ROUTE: self.route,
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
                 }]
             return self.info
+
+    def processEvent(result, i):
+        """Parse the current event and extract data"""
+        number = ''
+        planned = ''
+        due = 0
+        delay = 0
+        realtime = 'n'
+        number = result['stopEvents'][i]['transportation']['number']
+        planned = datetime.strptime(result['stopEvents'][i]
+                                    ['departureTimePlanned'], fmt)
+        estimated = planned
+        if 'isRealtimeControlled' in result['stopEvents'][i]:
+            realtime = 'y'
+            estimated = datetime.strptime(result['stopEvents'][i]
+                                          ['departureTimeEstimated'], fmt)
+        # Only deal with future leave times
+        if estimated > datetime.utcnow():
+            due = self.get_due(estimated)
+            delay = self.get_delay(planned, estimated)
+            return[
+                number,
+                due,
+                delay,
+                planned,
+                estimated,
+                realtime,
+                ]
+        else:
+            return None
 
     def get_due(self, estimated):
         """Min till next leave event"""
