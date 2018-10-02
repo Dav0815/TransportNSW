@@ -22,7 +22,7 @@ print(journey)
 ```
 **Result:**
 ```
-[{'delay': 0.0, 'route': u'199', 'due': 11.0, 'realtime': 'y'}]
+[{'stopid': '209516', 'route': '199', 'due': 16, 'delay': 6, 'realtime': 'y'}]
 ```
 * route: bus, train, ferry number
 * due: minutes till next leave
@@ -40,5 +40,5 @@ journey = p1.get_departures('209516','','YOUR_API_KEY')
 
 No leave event with wrong stop ID or not matching route.
 ```
-[{'delay': 'n/a', 'route': '1999', 'due': 'n/a', 'realtime': 'n/a'}]
+[{'stopid': 'n/a', 'route': 'n/a', 'due': 'n/a', 'delay': 'n/a', 'realtime': 'n/a'}]
 ```

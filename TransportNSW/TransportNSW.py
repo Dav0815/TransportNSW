@@ -48,8 +48,8 @@ class TransportNSW(object):
             # print("Error with the request sent")
             # print response.status_code
             self.info = [{
-                ATTR_STOP_ID: self.stopid,
-                ATTR_ROUTE: self.route,
+                ATTR_STOP_ID: 'n/a',
+                ATTR_ROUTE: 'n/a',
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
@@ -66,33 +66,34 @@ class TransportNSW(object):
         except KeyError:
             # print("No stop events for this query")
             self.info = [{
-                ATTR_STOP_ID: self.stopid,
-                ATTR_ROUTE: self.route,
+                ATTR_STOP_ID: 'n/a',
+                ATTR_ROUTE: 'n/a',
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
                 }]
             return self.info
 
-        # Set timestamp format and variables
-        fmt = '%Y-%m-%dT%H:%M:%SZ'
+        # Set variables
         maxresults = 3
         monitor = []
-
         if self.route != '':
             # Find the next stop events for a specific route
             for i in range(len(result['stopEvents'])):
                 number = result['stopEvents'][i]['transportation']['number']
                 if number == self.route:
-                    monitor.append(processEvent(result, i))
+                    event = self.parseEvent(result, i)
+                    if event != None:
+                        monitor.append(event)
                     if len(monitor) >= maxresults:
                         # We found enough results, lets stop
                         break
         else:
             # No route defined, find any route leaving next
             for i in range(0, maxresults):
-                monitor.append(processEvent(result, i))
-
+                event = self.parseEvent(result, i)
+                if event != None:
+                    monitor.append(event)
         if monitor:
             self.info = [{
                 ATTR_STOP_ID: self.stopid,
@@ -101,33 +102,31 @@ class TransportNSW(object):
                 ATTR_DELAY: monitor[0][2],
                 ATTR_REALTIME: monitor[0][5],
                 }]
-            return self.info
         else:
             # No stop events for this route
             self.info = [{
-                ATTR_STOP_ID: self.stopid,
-                ATTR_ROUTE: self.route,
+                ATTR_STOP_ID: 'n/a',
+                ATTR_ROUTE: 'n/a',
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
                 }]
-            return self.info
+        return self.info
 
-    def processEvent(result, i):
+    def parseEvent(self, result, i):
         """Parse the current event and extract data"""
-        number = ''
-        planned = ''
+        fmt = '%Y-%m-%dT%H:%M:%SZ'
         due = 0
         delay = 0
         realtime = 'n'
         number = result['stopEvents'][i]['transportation']['number']
         planned = datetime.strptime(result['stopEvents'][i]
-                                    ['departureTimePlanned'], fmt)
+            ['departureTimePlanned'], fmt)
         estimated = planned
         if 'isRealtimeControlled' in result['stopEvents'][i]:
             realtime = 'y'
             estimated = datetime.strptime(result['stopEvents'][i]
-                                          ['departureTimeEstimated'], fmt)
+                ['departureTimeEstimated'], fmt)
         # Only deal with future leave times
         if estimated > datetime.utcnow():
             due = self.get_due(estimated)
