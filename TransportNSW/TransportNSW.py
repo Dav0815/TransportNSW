@@ -8,6 +8,7 @@ ATTR_DUE_IN = 'due'
 ATTR_DELAY = 'delay'
 ATTR_REALTIME = 'realtime'
 
+
 class TransportNSW(object):
     """The Class for handling the data retrieval."""
 
@@ -32,14 +33,15 @@ class TransportNSW(object):
         #Build the URL including the STOPID and the API key
         url = \
             'https://api.transport.nsw.gov.au/v1/tp/departure_mon?' \
-            'outputFormat=rapidJSON&coordOutputFormat=EPSG%3A4326&mode=direct&type_dm=stop&name_dm=' \
+            'outputFormat=rapidJSON&coordOutputFormat=EPSG%3A4326&' \
+            'mode=direct&type_dm=stop&name_dm=' \
             + self.stopid \
             + '&departureMonitorMacro=true&TfNSWDM=true&version=10.2.1.42'
         auth = 'apikey ' + self.apikey
         header = {'Accept': 'application/json', 'Authorization': auth}
 
         response = requests.get(url, headers=header, timeout=10)
-        
+
         # If there is no valid request, set to default response
         if response.status_code != 200:
             print("Error with the request sent")
@@ -75,7 +77,7 @@ class TransportNSW(object):
         monitor = []
 
         if self.route != '':
-            # Find the next stop events for a specific route            
+            # Find the next stop events for a specific route
             for i in range(len(result['stopEvents'])):
                 number = ''
                 planned = ''
@@ -86,15 +88,16 @@ class TransportNSW(object):
 
                 number = result['stopEvents'][i]['transportation']['number']
                 if number == self.route:
-                    planned = datetime.strptime(result['stopEvents'][i]['departureTimePlanned'], fmt)
+                    planned = datetime.strptime(result['stopEvents'][i]
+                                                ['departureTimePlanned'], fmt)
                     estimated = planned
                     if 'isRealtimeControlled' in result['stopEvents'][i]:
                         realtime = 'y'
-                        estimated = datetime.strptime(result['stopEvents'][i]['departureTimeEstimated'], fmt)
+                        estimated = datetime.strptime(result['stopEvents'][i]
+                                                      ['departureTimeEstimated'], fmt)
                     if estimated > datetime.utcnow():
                         due = self.get_due(estimated)
-                        delay = self.get_delay(planned,estimated)
-                        
+                        delay = self.get_delay(planned, estimated)
                         monitor.append([
                             number,
                             due,
@@ -118,16 +121,18 @@ class TransportNSW(object):
                 realtime = 'n'
 
                 number = result['stopEvents'][i]['transportation']['number']
-                planned = datetime.strptime(result['stopEvents'][i]['departureTimePlanned'], fmt)
+                planned = datetime.strptime(result['stopEvents'][i]
+                                            ['departureTimePlanned'], fmt)
                 estimated = planned
                 if 'isRealtimeControlled' in result['stopEvents'][i]:
                     realtime = 'y'
-                    estimated = datetime.strptime(result['stopEvents'][i]['departureTimeEstimated'], fmt)
+                    estimated = datetime.strptime(result['stopEvents'][i]
+                                                  ['departureTimeEstimated'], fmt)
 
                 # Only deal with future leave times
                 if estimated > datetime.utcnow():
                     due = self.get_due(estimated)
-                    delay = self.get_delay(planned,estimated)
+                    delay = self.get_delay(planned, estimated)
 
                     monitor.append([
                         number,
@@ -159,14 +164,14 @@ class TransportNSW(object):
     def get_due(self, estimated):
         """Min till next leave event"""
         due = 0
-        due = round((estimated - datetime.utcnow()).seconds/ 60)
+        due = round((estimated - datetime.utcnow()).seconds / 60)
         return due
 
     def get_delay(self, planned, estimated):
         """Min of delay on planned departure"""
         delay = 0
         if estimated >= planned:
-            delay = round((estimated - planned).seconds/ 60)
+            delay = round((estimated - planned).seconds / 60)
         else:
-            delay = round((planned - estimated).seconds/ 60) * -1
+            delay = round((planned - estimated).seconds / 60) * -1
         return delay
