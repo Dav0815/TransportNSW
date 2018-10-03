@@ -2,6 +2,7 @@
 from datetime import timedelta, datetime
 from requests.exceptions import ConnectionError
 import requests
+import logging
 
 ATTR_STOP_ID = 'stopid'
 ATTR_ROUTE = 'route'
@@ -45,7 +46,7 @@ class TransportNSW(object):
         try:
             response = requests.get(url, headers=header, timeout=10)
         except ConnectionError as e:
-            # print("Network error")
+            logging.warning("Network error")
             self.info = [{
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
@@ -57,8 +58,7 @@ class TransportNSW(object):
 
         # If there is no valid request, set to default response
         if response.status_code != 200:
-            # print("Error with the request sent")
-            # print response.status_code
+            logging.warning("Error with the request sent; check api key")
             self.info = [{
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
@@ -70,13 +70,12 @@ class TransportNSW(object):
 
         # Parse the result as a JSON object
         result = response.json()
-        # print(result)
 
         # If there is no stop events for the query, set to default response
         try:
             result['stopEvents']
         except KeyError:
-            # print("No stop events for this query")
+            # logging.warning("No stop events for this query")
             self.info = [{
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
