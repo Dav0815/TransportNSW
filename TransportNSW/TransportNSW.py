@@ -1,5 +1,6 @@
 """A module to query Transport NSW (Australia) departure times."""
 from datetime import timedelta, datetime
+from requests.exceptions import ConnectionError
 import requests
 
 ATTR_STOP_ID = 'stopid'
@@ -41,7 +42,18 @@ class TransportNSW(object):
         auth = 'apikey ' + self.apikey
         header = {'Accept': 'application/json', 'Authorization': auth}
 
-        response = requests.get(url, headers=header, timeout=10)
+        try:
+            response = requests.get(url, headers=header, timeout=10)
+        except ConnectionError as e:
+            # print("Network error")
+            self.info = [{
+                ATTR_STOP_ID: 'n/a',
+                ATTR_ROUTE: 'n/a',
+                ATTR_DUE_IN: 'n/a',
+                ATTR_DELAY: 'n/a',
+                ATTR_REALTIME: 'n/a',
+                }]
+            return self.info
 
         # If there is no valid request, set to default response
         if response.status_code != 200:
