@@ -18,8 +18,8 @@ The following example will request the next leave event for the bus line *199* f
 **Code:**
 ```python
 from TransportNSW import TransportNSW
-p1 = TransportNSW.TransportNSW()
-journey = p1.get_departures('209516','199','YOUR_API_KEY')
+ptnsw1 = TransportNSW.TransportNSW()
+journey = tnsw.get_departures('209516','199','YOUR_API_KEY')
 print(journey)
 ```
 **Result:**
@@ -35,7 +35,7 @@ Leaving the line field empty will return any bus/train/ferry leaving next from a
 **Code:**
 
 ```python
-journey = p1.get_departures('209516','','YOUR_API_KEY')
+journey = tnsw.get_departures('209516','','YOUR_API_KEY')
 ```
 
 ### Errors
