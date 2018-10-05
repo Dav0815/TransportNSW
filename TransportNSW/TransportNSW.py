@@ -10,6 +10,7 @@ ATTR_DUE_IN = 'due'
 ATTR_DELAY = 'delay'
 ATTR_REALTIME = 'realtime'
 
+logger = logging.getLogger(__name__)
 
 class TransportNSW(object):
     """The Class for handling the data retrieval."""
@@ -46,7 +47,7 @@ class TransportNSW(object):
         try:
             response = requests.get(url, headers=header, timeout=10)
         except ConnectionError as e:
-            logging.warning("Network error")
+            logger.warning("Network error")
             self.info = [{
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
@@ -58,7 +59,7 @@ class TransportNSW(object):
 
         # If there is no valid request, set to default response
         if response.status_code != 200:
-            logging.warning("Error with the request sent; check api key")
+            logger.warning("Error with the request sent; check api key")
             self.info = [{
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
@@ -75,7 +76,7 @@ class TransportNSW(object):
         try:
             result['stopEvents']
         except KeyError:
-            # logging.warning("No stop events for this query")
+            # logger.warning("No stop events for this query")
             self.info = [{
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',

@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="TransportNSW",
-    version="0.0.4",
+    name="PyTransportNSW",
+    version="0.0.6",
     author="Dav0815",
     description="Get transport information from TransportNSW",
     long_description=long_description,
