@@ -4,11 +4,11 @@ from requests.exceptions import ConnectionError
 import requests
 import logging
 
-ATTR_STOP_ID = 'stopid'
+ATTR_STOP_ID = 'stop_id'
 ATTR_ROUTE = 'route'
 ATTR_DUE_IN = 'due'
 ATTR_DELAY = 'delay'
-ATTR_REALTIME = 'realtime'
+ATTR_REALTIME = 'real_time'
 
 logger = logging.getLogger(__name__)
 
@@ -17,56 +17,56 @@ class TransportNSW(object):
 
     def __init__(self):
         """Initialize the data object."""
-        self.stopid = None
+        self.stop_id = None
         self.route = None
-        self.apikey = None
-        self.info = [{
+        self.api_key = None
+        self.info = {
             ATTR_STOP_ID: None,
             ATTR_ROUTE: None,
             ATTR_DUE_IN: 'n/a',
             ATTR_DELAY: 'n/a',
             ATTR_REALTIME: 'n/a',
-            }]
+            }
 
-    def get_departures(self, stopid, route, apikey):
+    def get_departures(self, stop_id, route, api_key):
         """Get the latest data from Transport NSW."""
-        self.stopid = stopid
+        self.stop_id = stop_id
         self.route = route
-        self.apikey = apikey
+        self.api_key = api_key
 
-        # Build the URL including the STOPID and the API key
+        # Build the URL including the STOP_ID and the API key
         url = \
             'https://api.transport.nsw.gov.au/v1/tp/departure_mon?' \
             'outputFormat=rapidJSON&coordOutputFormat=EPSG%3A4326&' \
             'mode=direct&type_dm=stop&name_dm=' \
-            + self.stopid \
+            + self.stop_id \
             + '&departureMonitorMacro=true&TfNSWDM=true&version=10.2.1.42'
-        auth = 'apikey ' + self.apikey
+        auth = 'apikey ' + self.api_key
         header = {'Accept': 'application/json', 'Authorization': auth}
 
         try:
             response = requests.get(url, headers=header, timeout=10)
         except ConnectionError as e:
             logger.warning("Network error")
-            self.info = [{
+            self.info = {
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
-                }]
+                }
             return self.info
 
         # If there is no valid request, set to default response
         if response.status_code != 200:
             logger.warning("Error with the request sent; check api key")
-            self.info = [{
+            self.info = {
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
-                }]
+                }
             return self.info
 
         # Parse the result as a JSON object
@@ -77,13 +77,13 @@ class TransportNSW(object):
             result['stopEvents']
         except KeyError:
             # logger.warning("No stop events for this query")
-            self.info = [{
+            self.info = {
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
-                }]
+                }
             return self.info
 
         # Set variables
@@ -107,22 +107,22 @@ class TransportNSW(object):
                 if event != None:
                     monitor.append(event)
         if monitor:
-            self.info = [{
-                ATTR_STOP_ID: self.stopid,
+            self.info = {
+                ATTR_STOP_ID: self.stop_id,
                 ATTR_ROUTE: monitor[0][0],
                 ATTR_DUE_IN: monitor[0][1],
                 ATTR_DELAY: monitor[0][2],
                 ATTR_REALTIME: monitor[0][5],
-                }]
+                }
         else:
             # No stop events for this route
-            self.info = [{
+            self.info = {
                 ATTR_STOP_ID: 'n/a',
                 ATTR_ROUTE: 'n/a',
                 ATTR_DUE_IN: 'n/a',
                 ATTR_DELAY: 'n/a',
                 ATTR_REALTIME: 'n/a',
-                }]
+                }
         return self.info
 
     def parseEvent(self, result, i):
@@ -130,13 +130,13 @@ class TransportNSW(object):
         fmt = '%Y-%m-%dT%H:%M:%SZ'
         due = 0
         delay = 0
-        realtime = 'n'
+        real_time = 'n'
         number = result['stopEvents'][i]['transportation']['number']
         planned = datetime.strptime(result['stopEvents'][i]
             ['departureTimePlanned'], fmt)
         estimated = planned
         if 'isRealtimeControlled' in result['stopEvents'][i]:
-            realtime = 'y'
+            real_time = 'y'
             estimated = datetime.strptime(result['stopEvents'][i]
                 ['departureTimeEstimated'], fmt)
         # Only deal with future leave times
@@ -149,7 +149,7 @@ class TransportNSW(object):
                 delay,
                 planned,
                 estimated,
-                realtime,
+                real_time,
                 ]
         else:
             return None
