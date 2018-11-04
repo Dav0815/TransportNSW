@@ -1,5 +1,5 @@
 """A module to query Transport NSW (Australia) departure times."""
-from datetime import timedelta, datetime
+from datetime import datetime
 from requests.exceptions import ConnectionError
 import requests
 import logging
@@ -9,6 +9,8 @@ ATTR_ROUTE = 'route'
 ATTR_DUE_IN = 'due'
 ATTR_DELAY = 'delay'
 ATTR_REALTIME = 'real_time'
+ATTR_DESTINATION = 'destination'
+ATTR_MODE = 'mode'
 
 logger = logging.getLogger(__name__)
 
@@ -16,22 +18,26 @@ class TransportNSW(object):
     """The Class for handling the data retrieval."""
 
     def __init__(self):
-        """Initialize the data object."""
+        """Initialize the data object with default values."""
         self.stop_id = None
         self.route = None
+        self.destination = None
         self.api_key = None
         self.info = {
-            ATTR_STOP_ID: None,
-            ATTR_ROUTE: None,
+            ATTR_STOP_ID: 'n/a',
+            ATTR_ROUTE: 'n/a',
             ATTR_DUE_IN: 'n/a',
             ATTR_DELAY: 'n/a',
             ATTR_REALTIME: 'n/a',
+            ATTR_DESTINATION: 'n/a',
+            ATTR_MODE: 'n/a'
             }
 
-    def get_departures(self, stop_id, route, api_key):
+    def get_departures(self, stop_id, route, destination, api_key):
         """Get the latest data from Transport NSW."""
         self.stop_id = stop_id
         self.route = route
+        self.destination = destination
         self.api_key = api_key
 
         # Build the URL including the STOP_ID and the API key
@@ -44,52 +50,42 @@ class TransportNSW(object):
         auth = 'apikey ' + self.api_key
         header = {'Accept': 'application/json', 'Authorization': auth}
 
+        # Send query or return error
         try:
             response = requests.get(url, headers=header, timeout=10)
         except ConnectionError as e:
             logger.warning("Network error")
-            self.info = {
-                ATTR_STOP_ID: 'n/a',
-                ATTR_ROUTE: 'n/a',
-                ATTR_DUE_IN: 'n/a',
-                ATTR_DELAY: 'n/a',
-                ATTR_REALTIME: 'n/a',
-                }
             return self.info
 
-        # If there is no valid request, set to default response
+        # If there is no valid request
         if response.status_code != 200:
             logger.warning("Error with the request sent; check api key")
-            self.info = {
-                ATTR_STOP_ID: 'n/a',
-                ATTR_ROUTE: 'n/a',
-                ATTR_DUE_IN: 'n/a',
-                ATTR_DELAY: 'n/a',
-                ATTR_REALTIME: 'n/a',
-                }
             return self.info
 
         # Parse the result as a JSON object
         result = response.json()
 
-        # If there is no stop events for the query, set to default response
+        # If there is no stop events for the query
         try:
             result['stopEvents']
         except KeyError:
-            # logger.warning("No stop events for this query")
-            self.info = {
-                ATTR_STOP_ID: 'n/a',
-                ATTR_ROUTE: 'n/a',
-                ATTR_DUE_IN: 'n/a',
-                ATTR_DELAY: 'n/a',
-                ATTR_REALTIME: 'n/a',
-                }
+            logger.warning("No stop events for this query")
             return self.info
 
         # Set variables
-        maxresults = 3
+        maxresults = 1
         monitor = []
-        if self.route != '':
+        if self.destination != '':
+            for i in range(len(result['stopEvents'])):
+                destination = result['stopEvents'][i]['transportation']['destination']['name']
+                if destination == self.destination:
+                    event = self.parseEvent(result, i)
+                    if event != None:
+                        monitor.append(event)
+                    if len(monitor) >= maxresults:
+                        # We found enough results, lets stop
+                        break
+        elif self.route != '':
             # Find the next stop events for a specific route
             for i in range(len(result['stopEvents'])):
                 number = result['stopEvents'][i]['transportation']['number']
@@ -113,20 +109,13 @@ class TransportNSW(object):
                 ATTR_DUE_IN: monitor[0][1],
                 ATTR_DELAY: monitor[0][2],
                 ATTR_REALTIME: monitor[0][5],
-                }
-        else:
-            # No stop events for this route
-            self.info = {
-                ATTR_STOP_ID: 'n/a',
-                ATTR_ROUTE: 'n/a',
-                ATTR_DUE_IN: 'n/a',
-                ATTR_DELAY: 'n/a',
-                ATTR_REALTIME: 'n/a',
+                ATTR_DESTINATION: monitor[0][6],
+                ATTR_MODE: monitor[0][7]
                 }
         return self.info
 
     def parseEvent(self, result, i):
-        """Parse the current event and extract data"""
+        """Parse the current event and extract data."""
         fmt = '%Y-%m-%dT%H:%M:%SZ'
         due = 0
         delay = 0
@@ -134,6 +123,8 @@ class TransportNSW(object):
         number = result['stopEvents'][i]['transportation']['number']
         planned = datetime.strptime(result['stopEvents'][i]
             ['departureTimePlanned'], fmt)
+        destination = result['stopEvents'][i]['transportation']['destination']['name']
+        mode = self.get_mode(result['stopEvents'][i]['transportation']['product']['class'])
         estimated = planned
         if 'isRealtimeControlled' in result['stopEvents'][i]:
             real_time = 'y'
@@ -150,21 +141,35 @@ class TransportNSW(object):
                 planned,
                 estimated,
                 real_time,
+                destination,
+                mode
                 ]
         else:
             return None
 
     def get_due(self, estimated):
-        """Min till next leave event"""
+        """Min till next leave event."""
         due = 0
         due = round((estimated - datetime.utcnow()).seconds / 60)
         return due
 
     def get_delay(self, planned, estimated):
-        """Min of delay on planned departure"""
-        delay = 0
-        if estimated >= planned:
+        """Min of delay on planned departure."""
+        delay = 0                   # default is no delay
+        if estimated >= planned:    # there is a delay
             delay = round((estimated - planned).seconds / 60)
-        else:
+        else:                       # leaving earlier
             delay = round((planned - estimated).seconds / 60) * -1
         return delay
+
+    def get_mode(self, iconId):
+        """Map the iconId to proper modes string."""
+        modes = {
+            1: "Train",
+            4: "Lightrail",
+            5: "Bus",
+            7: "Coach",
+            9: "Ferry",
+            11: "Schoolbus"
+        }
+        return modes.get(iconId, None)
