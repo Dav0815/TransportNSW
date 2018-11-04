@@ -1,6 +1,6 @@
 """A module to query Transport NSW (Australia) departure times."""
 from datetime import datetime
-from requests.exceptions import ConnectionError
+import requests.exceptions
 import requests
 import logging
 
@@ -53,8 +53,8 @@ class TransportNSW(object):
         # Send query or return error
         try:
             response = requests.get(url, headers=header, timeout=10)
-        except ConnectionError as e:
-            logger.warning("Network error")
+        except:
+            logger.warning("Network or Timeout error")
             return self.info
 
         # If there is no valid request
