@@ -15,6 +15,9 @@ Another source for the stop ID and line is  https://transportnsw.info/stops#/. I
 ### Sample Code
 The following example will request the next leave event for the bus route/line *199* from stop ID *209516*.
 
+### API Documentation
+The source API details can be found here: https://opendata.transport.nsw.gov.au/node/601/exploreapi
+
 **Code:**
 ```python
 from TransportNSW import TransportNSW
