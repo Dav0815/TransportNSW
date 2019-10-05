@@ -108,6 +108,8 @@ class TransportNSW(object):
                 event = self.parseEvent(result, i)
                 if event != None:
                     monitor.append(event)
+
+        # If the monitor object is defined, updated the return object with core infos
         if monitor:
             self.info = {
                 ATTR_STOP_ID: self.stop_id,
