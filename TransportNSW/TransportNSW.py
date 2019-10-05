@@ -53,7 +53,8 @@ class TransportNSW(object):
         auth = 'apikey ' + self.api_key
         header = {'Accept': 'application/json', 'Authorization': auth}
 
-        # Send query or return error
+        # Send the query and return error if something goes wrong
+        # Otherwise store the response
         try:
             response = requests.get(url, headers=header, timeout=10)
         except:
