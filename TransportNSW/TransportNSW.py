@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 class TransportNSW(object):
     """The Class for handling the data retrieval."""
 
+    # The application requires an API key. You can register for
+    # free on the service NSW website for it.
+
     def __init__(self):
         """Initialize the data object with default values."""
         self.stop_id = None
