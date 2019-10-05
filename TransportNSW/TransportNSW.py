@@ -61,7 +61,8 @@ class TransportNSW(object):
             logger.warning("Network or Timeout error")
             return self.info
 
-        # If there is no valid request
+        # If there is no valid request (e.g. http code 200)
+        # log error and return empty object
         if response.status_code != 200:
             logger.warning("Error with the request sent; check api key")
             return self.info
@@ -70,6 +71,7 @@ class TransportNSW(object):
         result = response.json()
 
         # If there is no stop events for the query
+        # log an error and return empty object
         try:
             result['stopEvents']
         except KeyError:
