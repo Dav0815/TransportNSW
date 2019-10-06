@@ -133,6 +133,7 @@ class TransportNSW(object):
             ['departureTimePlanned'], fmt)
         destination = result['stopEvents'][i]['transportation']['destination']['name']
         mode = self.get_mode(result['stopEvents'][i]['transportation']['product']['class'])
+        # Unless realtime data is available the plannned is equal to estimated time
         estimated = planned
         if 'isRealtimeControlled' in result['stopEvents'][i]:
             real_time = 'y'
