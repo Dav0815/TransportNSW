@@ -19,4 +19,7 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ),
+    install_requires=[
+       'requests',
+   ],
 )
