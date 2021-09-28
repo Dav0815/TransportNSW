@@ -8,6 +8,7 @@ setuptools.setup(
     version="0.1.2",
     author="Dav0815",
     description="Get transport information from TransportNSW",
+    install_requires=["requests"],
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Dav0815/TransportNSW",
